@@ -47,7 +47,7 @@ jobs:
           RUN=$(isofit path examples)/image_cube/small/
           $RUN/default.sh --log_file dev/default.log --resources
 
-          isoplots spectra $RUN/output/ang20170323t202244_rfl -o dev/spectra.png -p 2 4 -p 8 2 -p 5 6
+          isoplots spectra $RUN/output/ang20170323t202244_rfl -o dev/spectra.png -p 2 4 -p 8 2 -p 5 6 -.05 .5
           isoplots resources dev/default.resources.jsonl -o dev/default.resources.html -l dev/default.log --relative --png --debug
 
       - name: Commit and push results
