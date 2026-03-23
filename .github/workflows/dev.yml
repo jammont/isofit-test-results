@@ -6,10 +6,43 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "dev/**"
   workflow_dispatch:
 
 jobs:
-  results:
+  extras:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.25"
+          python-version: "3.12"
+          activate-environment: true
+
+      - name: Install ISOFIT
+        run: |
+          uv add git+https://github.com/isofit/isofit --branch dev
+
+      - name: Download Extras
+        shell: bash
+        run: |
+          echo "Downloading extras"
+          isofit download all
+          echo "Building examples"
+          isofit build
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: extras
+          path: ~/.isofit
+
+  upload:
+    # NOTE: Add other jobs here when adding a new workflow file
+    needs:
+      - imagecube-small
+      - lakemary
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -19,38 +52,25 @@ jobs:
         with:
           ref: main
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
+      - name: Prepare
+        run: rm -rf dev
+
+      - uses: actions/download-artifact@v8
         with:
-          version: "0.9.25"
+          path: dev
 
-      - name: Set up Python
-        run: |
-          uv init
-          uv python install 3.12
-          uv add git+https://github.com/isofit/isofit --branch dev
-
-      - name: Download Extras
-        shell: bash
-        run: |
-          echo "Downloading extras"
-          uv run isofit download all
-          echo "Building examples"
-          uv run isofit build
-
-      - name: Execute tests
-        run: |
-          mkdir -p dev
-          rm -rf dev/*
-
-          source .venv/bin/activate
-          RUN=$(isofit path examples)/image_cube/small/
-          $RUN/default.sh --log_file dev/default.log --resources
-
-          isoplots spectra $RUN/output/ang20170323t202244_rfl -o dev/spectra.png -p 2 4 -p 8 2 -p 5 6
-          isoplots resources dev/default.resources.jsonl -o dev/default.resources.html -l dev/default.log --relative --png --debug
+      - name: Remove Extras
+        run: rm -rf dev/extras
 
       - name: Commit and push results
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           file_pattern: 'dev/*'
+
+  imagecube-small:
+    needs: extras
+    uses: ./.github/workflows/results_imagecube_small.yml
+
+  # lakemary:
+  #   needs: extras
+  #   uses: ./.github/workflows/results_lakemary.yml
