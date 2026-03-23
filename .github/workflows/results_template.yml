@@ -1,0 +1,38 @@
+# This is a template for adding new test cases to be automatically uploaded to the repo
+# Be sure to update dev.yml to execute the workflow
+name: Name Doesn't Matter
+
+on:
+  workflow_call:
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: extras
+          path: ~/.isofit
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.25"
+          python-version: "3.12"
+          activate-environment: true
+
+      - name: Install ISOFIT
+        run: |
+          uv add git+https://github.com/isofit/isofit --branch dev --extra plots
+
+      - name: Execute tests
+        run: |
+          mkdir results
+
+          do something here, generate results you want uploaded to the results/ directory
+          next step will upload it
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: specify_a_name_for_this_test
+          path: results
